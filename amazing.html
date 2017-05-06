@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+div {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+</style>
+</head>
+<body>
+<div class="flex">
+<label for="mazeDimension"> Maze Dimension </label>
+<input id="mazeDimension" type="range" value="15" min="1" max="50">
+<label for="squareDimension"> Square Dimension </label>
+<input id="squareDimension" type="range" value="15" min="1" max="50">
+<button id="build"> build maze </button>
+</div>
+<script>
+
+function randomMaze(mazeDimension, squareDimension) {
+
+	var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+	svg.setAttribute("width", 920);
+	svg.setAttribute("height", 920);
+	svg.setAttribute("viewBox", "-20 -20 900 900");
+	svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+
+	document.body.appendChild(svg);
+
+	//100 squares
+	var squares = [];
+
+	var visitedSquares = [];
+
+	//211 lines
+	var lines = [];
+
+	var visitedLines = [];
+
+	//var square = {id: 1, neighbors: {top: {squareId: null, lineId: 111}, bottom: {squareId: 11, lineId: 112}, left: {squareId: null, lineId: 1}, right: {squareId: 2, lineId: 2}}};
+
+	var svg = document.getElementsByTagName('svg')[0];
+	//vert 
+
+	for(var i = 0; i < mazeDimension + 1; i++) {
+
+		for(var j = 0; j < mazeDimension; j++) {
+
+			var line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+			line.id = (i * mazeDimension) + (j + 1);
+			line.setAttribute("x1", j * squareDimension);
+			line.setAttribute("x2", (j + 1) * squareDimension);
+			line.setAttribute("y1", i * squareDimension);
+			line.setAttribute("y2", i * squareDimension);
+			line.setAttribute("strokeWidth", 1);
+			line.setAttribute("stroke", "black");
+			svg.appendChild(line);
+
+			lines[line.id] = line;
+
+		}
+
+	}
+
+	for(var i = 0; i < mazeDimension; i++) {
+
+		for(var j = 0; j < mazeDimension + 1; j++) {
+
+			var line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+			line.id = (mazeDimension + 1) * (mazeDimension) + (i * mazeDimension) + (j + 1);
+			line.setAttribute("x1", j * squareDimension);
+			line.setAttribute("x2", j * squareDimension);
+			line.setAttribute("y1", i * squareDimension);
+			line.setAttribute("y2", (i + 1) * squareDimension);
+			line.setAttribute("strokeWidth", 1);
+			line.setAttribute("stroke", "black");
+			svg.appendChild(line);
+
+			lines[line.id] = line;
+
+		}
+
+	}
+
+	for (var a = 0; a < mazeDimension * mazeDimension; a++) {
+
+		var square = new Object();
+		square.id = a + 1;
+		square.neighbors = new Object();
+		square.neighbors.left = new Object();
+		square.neighbors.right = new Object();
+		square.neighbors.top = new Object();
+		square.neighbors.bottom = new Object();
+
+		if(a % mazeDimension !== 0) {
+			square.neighbors.left.squareId = a;
+		}
+
+		square.neighbors.left.lineId = (a+1) + (mazeDimension * (mazeDimension + 1));
+
+		if(a % mazeDimension < mazeDimension-1) {
+			square.neighbors.right.squareId = a + 2;
+		}
+
+		square.neighbors.right.lineId = (a+2) + (mazeDimension * (mazeDimension + 1));
+
+		if(a > mazeDimension - 1) {
+			square.neighbors.top.squareId = a + 1 - mazeDimension;
+		}
+
+		square.neighbors.top.lineId = a + 1;
+
+		if(a < (mazeDimension - 1) * (mazeDimension) ) {
+			square.neighbors.bottom.squareId = a + mazeDimension + 1;
+		}
+
+		square.neighbors.bottom.lineId = a + 1 + mazeDimension;
+
+		squares[a+1] = square;
+
+	}
+
+	function shuffle(array) {
+	  var currentIndex = array.length, temporaryValue, randomIndex;
+
+	  // While there remain elements to shuffle...
+	  while (0 !== currentIndex) {
+
+	    // Pick a remaining element...
+	    randomIndex = Math.floor(Math.random() * currentIndex);
+	    currentIndex -= 1;
+
+	    // And swap it with the current element.
+	    temporaryValue = array[currentIndex];
+	    array[currentIndex] = array[randomIndex];
+	    array[randomIndex] = temporaryValue;
+	  }
+
+	  return array;
+	};
+
+	function testNode(n,v,s) {
+
+		if(n.neighbors.top.squareId !== undefined && v.indexOf(s[n.neighbors.top.squareId]) < 0) {
+			return true;
+		}
+
+		if(n.neighbors.bottom.squareId !== undefined && v.indexOf(s[n.neighbors.bottom.squareId]) < 0) {
+			return true;
+		}
+
+		if(n.neighbors.left.squareId !== undefined && v.indexOf(s[n.neighbors.left.squareId]) < 0) {
+			return true;
+		}
+
+		if(n.neighbors.right.squareId !== undefined && v.indexOf(s[n.neighbors.right.squareId]) < 0) {
+			return true;
+		}
+
+		return false;
+
+	};
+
+	function ff() {
+
+		var visitedNodes = [];
+		var stack = [];
+		lines[squares[1].neighbors.left.lineId].setAttribute("stroke", "white");
+		stack.push(squares[1]);
+
+		while(stack.length > 0) {
+			console.log("loop");
+			var previousNode = currentNode;
+			var currentNode = stack.pop();
+			//console.log("current node: ", currentNode);
+			if(previousNode && currentNode) {
+				if(previousNode.neighbors.top.squareId === currentNode.id) {
+					lines[previousNode.neighbors.top.lineId].setAttribute("stroke", "white");
+				} else if(previousNode.neighbors.bottom.squareId === currentNode.id) {
+					lines[previousNode.neighbors.bottom.lineId].setAttribute("stroke", "white");
+				} else if(previousNode.neighbors.left.squareId === currentNode.id) {
+					lines[previousNode.neighbors.left.lineId].setAttribute("stroke", "white");
+				} else if(previousNode.neighbors.right.squareId === currentNode.id) {
+					lines[previousNode.neighbors.right.lineId].setAttribute("stroke", "white");
+				}
+			}
+			
+			visitedNodes.push(currentNode);
+
+			if(currentNode) {
+				//end of the maze
+				if(currentNode.id === mazeDimension*mazeDimension) {
+					lines[lines.length-1].setAttribute("stroke", "white");
+				}
+
+				var keys = Object.keys(currentNode.neighbors);
+
+				keys = shuffle(keys);
+
+				var nbs = 0;
+
+				for(var i = 0; i < keys.length; i++){
+
+					var key = keys[i];
+					var neighbor = currentNode.neighbors[key];
+
+					if(neighbor !== undefined && visitedNodes.indexOf(squares[neighbor.squareId]) < 0) {
+
+						var nb = squares[neighbor.squareId];
+
+						if(nb !== null && nb !== undefined) {
+							//console.log("real neighbor: " , nb);
+							stack.push(nb);
+							nbs++;
+						}
+
+					}
+
+				}
+
+				if(nbs < 1) {
+
+					var index = 1;
+
+					while(nbs < 1 && index <= visitedNodes.length) {
+
+						var node = visitedNodes[visitedNodes.length-index];
+
+						if(testNode(node, visitedNodes, squares)) {
+							nbs++;
+							currentNode = node;
+							//console.log("previous node: ", node);
+						} else {
+							index++;
+						}
+
+					}
+
+				}
+				
+			}
+
+		}
+
+	}
+
+	ff();
+
+};
+
+randomMaze(20, 20);
+
+document.getElementById("build").addEventListener("click", function() {
+
+	var md = document.getElementById("mazeDimension").value;
+	var sd = document.getElementById("squareDimension").value;
+	var bg = document.getElementsByTagName('svg')[0];
+	document.body.removeChild(bg);
+
+	console.log("square dimension: ", sd);
+
+	randomMaze(parseInt(md), parseInt(sd));
+
+});
+
+
+</script>
+</body>
+</html>
